@@ -46,6 +46,6 @@ void enx( char *data, int len )
 {
 	for(int i = 0; i < len; ++i )
 	{
-		*(data + i) ^= 7;
+		data[i] ^= 7;
 	}
 }

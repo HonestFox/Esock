@@ -17,6 +17,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <errno.h>
+#include <stdio.h>
 
 #include "protocol.h"
 #include "transfer.h"
@@ -39,6 +41,7 @@ static int startup( int port, char *ip = NULL, bool IsServer = true)
 
 
 	sockaddr_in local;
+	memset( &local, 0, sizeof(local) );
 	local.sin_family = AF_INET;
 	local.sin_port = htons( port );
 	if( IsServer )
@@ -76,13 +79,19 @@ int proc_forward( int in, const char *ip, const char *port )
 	memset( &raddr, 0, sizeof( raddr ) );
 	raddr.sin_family = AF_INET;
 	raddr.sin_addr.s_addr = inet_addr( ip );
-	assert( 0 == connect( out, (sockaddr*)&raddr, sizeof( raddr ) ) );
-
+	raddr.sin_port = htons( atoi(port) );
+//	assert( 0 == connect( out, (sockaddr*)&raddr, sizeof( raddr ) ) );
+	
+	if( 0 != connect( out, (sockaddr*)&raddr, sizeof( raddr ) ) )
+	{
+		printf("%m\n", errno);
+		exit(-2);
+	}
 
 	TParam up = { in, out , 0 };
 	TParam down = { out, in, 0 };
-	assert( pthread_create( &down.bro, NULL, transfer, &up ) );
-	assert( pthread_create( &up.bro, NULL, transfer, &down ) );
+	assert( 0 == pthread_create( &down.bro, NULL, transfer, &up ) );
+	assert( 0 == pthread_create( &up.bro, NULL, transfer, &down ) );
 	pthread_join( up.bro, NULL );
 	pthread_join( down.bro, NULL );
 	return 0;

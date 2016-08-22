@@ -1,0 +1,14 @@
+简单的原理：
+是用socket代理的方式的实现的
+client 和 server其实都是服务器
+主机运行client，连接server，server运行在国外的机器上，
+本地发送请求给client，client再转发给server server获得请求的信息，执行，并将得到的信息以同样的方式传回来
+
+
+食用方法：
+远端(server): ./server 端口号
+本地(client)：[./client 本地端口（随便取）] [远端ip]  [server的端口号]
+浏览器设置： 远程DNS（Remote DNS）打勾，代理选择 SOCKS v5，然后IP和端口号都填client的
+
+目前只能在linux下用
+

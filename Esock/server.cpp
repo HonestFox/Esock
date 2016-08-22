@@ -37,6 +37,7 @@ static int startup( int port, char *ip = NULL, bool IsServer = true)
 
 
 	sockaddr_in local;
+	memset( &local, 0, sizeof(local) );
 	local.sin_family = AF_INET;
 	local.sin_port = htons( port );
 	if( IsServer )
@@ -69,6 +70,8 @@ int proc_socks( int in )
 {
 	SKReq sreq;
 	assert( 0 == recv_n( in, (char*)&sreq, sizeof(sreq) ) );
+	cout << sreq.ver << "  " << endl;
+	cout << sreq.n << "  " << endl;
 	assert( sreq.ver == 5 && sreq.n == 1 );
 	char methods[8];
 	assert( 0 == recv_n( in, methods, sreq.n ) );
@@ -124,15 +127,18 @@ int proc_socks( int in )
 	sockaddr_in local_addr;
 	socklen_t slen = sizeof( local_addr );
 	assert( 0 == getsockname( out, (sockaddr*)&local_addr, &slen ) );
-	memcpy( &arep.addr, &local_addr.sin_addr, sizeof( local_addr.sin_addr ) );
+	memcpy( &arep.addr, &local_addr.sin_addr.s_addr, sizeof( local_addr.sin_addr.s_addr ) );
 	memcpy( &arep.port, &local_addr.sin_port, sizeof( local_addr.sin_port ) );
 	assert( 0 == send_n( in, (char*)&arep, sizeof( arep ) ) );
 	
 	//Begin Transport
 	TParam up = { in, out , 0 };
 	TParam down = { out, in, 0 };
-	assert( pthread_create( &down.bro, NULL, transfer, &up ) );
-	assert( pthread_create( &up.bro, NULL, transfer, &down ) );
+//	assert( pthread_create( &down.bro, NULL, transfer, &up ) );
+//	assert( pthread_create( &up.bro, NULL, transfer, &down ) );
+	assert( 0 == pthread_create( &down.bro, NULL, transfer, &up ) );
+	assert( 0 == pthread_create( &up.bro, NULL, transfer, &down ) );
+	pthread_join( up.bro, NULL );
 	pthread_join( up.bro, NULL );
 	pthread_join( down.bro, NULL );
 	return 0;
